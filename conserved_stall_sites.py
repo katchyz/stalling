@@ -1,34 +1,32 @@
 ### find conserved stall sites in different organisms
 
-import cPickle as pickle
+import gnureadline
+import os.path
 import gzip
+
+import cPickle as pickle
 import subprocess
 from itertools import combinations
 
 # get GWP
 # library[stage][transcript] = [peak1, peak2...]
+path = '/Volumes/USELESS/STALLING/conservation'
+organisms = ['yeast', 'fruitfly', 'zebrafish', 'mouse', 'human']
+# os.path.join('/my/root/directory', 'in', 'here')
 
-our = pickle.load(gzip.open('/Volumes/USELESS/META/genes_with_peaks/GWP_OUR.p.gz', 'rb'))
-giraldez = pickle.load(gzip.open('/Volumes/USELESS/META/genes_with_peaks/GWP_Giraldez.p.gz', 'rb'))
-fruitfly = pickle.load(gzip.open('/Volumes/USELESS/META/genes_with_peaks/GWP_fruitfly.p.gz', 'rb'))
-mouse = pickle.load(gzip.open('/Volumes/USELESS/META/genes_with_peaks/GWP_mouse.p.gz', 'rb'))
-yeast = pickle.load(gzip.open('/Volumes/USELESS/META/genes_with_peaks/GWP_yeast.p.gz', 'rb'))
 
-to_delete = {}
+gwpeaks = {}
 for org in organisms:
-	to_delete[org] = {}
-	gwps = eval(org)
-	for stage in gwps:
-		to_delete[org][stage] = []
-		for tr in gwps[stage]:
-			if not tr in fasta[org]:
-				to_delete[org][stage].append(tr)
-
-for org in to_delete:
-	for stage in to_delete[org]:
-		lib = eval(org)
-		for i in to_delete[org][stage]:
-			del lib[stage][i]
+	f = open(os.path.join(path, 'consensus_df', org+'.csv'), 'r')
+	gwpeaks[org] = {}
+	for line in f:
+		tx = eval(line.split(',')[1])
+		start = eval(line.split(',')[5])
+		if not tx == 'seqnames':
+			if not tx in gwpeaks[org].keys():
+				gwpeaks[org][tx] = [start]
+			else:
+				gwpeaks[org][tx].append(start)
 
 
 def write_xml(data, file_out, dataset_name='drerio_gene_ensembl', filter_name='ensembl_transcript_id', attribute_name='ensembl_transcript_id', attribute_name2='uniprot_genename'):
@@ -38,7 +36,7 @@ def write_xml(data, file_out, dataset_name='drerio_gene_ensembl', filter_name='e
 		<Query  virtualSchemaName = "default" formatter = "TSV" header = "0" uniqueRows = "0" count = "" datasetConfigVersion = "0.6" >\n\
 		\t\t\t\n\
 		\t<Dataset name = "'+dataset_name+'" interface = "default" >\n\
-		\t\t<Filter name = "'+filter_name+'" value = "'+",".join([(",".join([(key2) for key2 in data[key1]])) for key1 in data])+'"/>\n\
+		\t\t<Filter name = "'+filter_name+'" value = "'+",".join(data.keys())+'"/>\n\
 		\t\t<Attribute name = "'+attribute_name+'" />\n\
 		\t\t<Attribute name = "'+attribute_name2+'" />\n\
 		\t</Dataset>\n\
@@ -46,14 +44,13 @@ def write_xml(data, file_out, dataset_name='drerio_gene_ensembl', filter_name='e
 	out_fh.close()
 
 
-write_xml(our, '/Volumes/USELESS/META/genes_with_peaks/our_query.xml')
-write_xml(giraldez, '/Volumes/USELESS/META/genes_with_peaks/giraldez_query.xml')
-write_xml(fruitfly, '/Volumes/USELESS/META/genes_with_peaks/fruitfly_query.xml', dataset_name='dmelanogaster_gene_ensembl', filter_name='flybase_transcript_id', attribute_name='flybase_transcript_id', attribute_name2='flybasename_gene')
-write_xml(mouse, '/Volumes/USELESS/META/genes_with_peaks/mouse_query.xml', dataset_name='mmusculus_gene_ensembl')
-write_xml(yeast, '/Volumes/USELESS/META/genes_with_peaks/yeast_query.xml', dataset_name='scerevisiae_gene_ensembl', attribute_name2='external_gene_name')
 
-# organisms = ['our', 'giraldez', 'fruitfly', 'mouse', 'yeast']
-organisms = ['our', 'giraldez', 'fruitfly', 'mouse', 'yeast']
+write_xml(gwpeaks['yeast'], os.path.join(path, 'biomart_queries', 'yeast.xml'), dataset_name='scerevisiae_gene_ensembl', attribute_name2='external_gene_name')
+write_xml(gwpeaks['fruitfly'], os.path.join(path, 'biomart_queries', 'fruitfly.xml'), dataset_name='dmelanogaster_gene_ensembl', filter_name='flybase_transcript_id', attribute_name='flybase_transcript_id', attribute_name2='flybasename_gene')
+write_xml(gwpeaks['zebrafish'], os.path.join(path, 'biomart_queries', 'zebrafish.xml'))
+write_xml(gwpeaks['mouse'], os.path.join(path, 'biomart_queries', 'mouse.xml'), dataset_name='mmusculus_gene_ensembl')
+write_xml(gwpeaks['human'], os.path.join(path, 'biomart_queries', 'human.xml'), dataset_name='hsapiens_gene_ensembl')
+
 
 # add path to GWP ?
 def runBiomart(organisms):
@@ -62,7 +59,7 @@ def runBiomart(organisms):
 	ens_gname = {}
 	for org in organisms:
 		ens_gname[org] = {}
-		query = '/Volumes/USELESS/META/genes_with_peaks/'+org+'_query.xml'
+		query = '/Volumes/USELESS/STALLING/conservation/biomart_queries/'+org+'.xml'
 		biomart = subprocess.Popen(['perl', '/Users/kasia/Documents/PhD/scripts/biomart-perl/scripts/webExample.pl', query],stdout=subprocess.PIPE)
 		for line in iter(biomart.stdout.readline,''):
 			if len(line.split()) == 2:
@@ -72,7 +69,10 @@ def runBiomart(organisms):
 					ens_gname[org][line.split()[1].lower()].append(line.split()[0])
 	return ens_gname
 
+
 ens_gname = runBiomart(organisms)
+
+
 
 def parse_clustalo(clustalo_subprocess):
 	""" Writes output of clustalo into dictionary """
@@ -130,40 +130,20 @@ def get_FASTA_sequence(filepath):
 
 
 fasta = {}
-# fasta[zebrafish] = get_FASTA_sequence('/Volumes/USELESS/DATA/fasta/danio_rerio/cds/Danio_rerio.Zv9.cds.all.fa.gz')
-fasta['our'] = get_FASTA_sequence('/Volumes/USELESS/DATA/fasta/danio_rerio/cds/Danio_rerio.Zv9.cds.all.fa.gz')
-fasta['giraldez'] = get_FASTA_sequence('/Volumes/USELESS/DATA/fasta/danio_rerio/cds/Danio_rerio.Zv9.cds.all.fa.gz')
-fasta['fruitfly'] = get_FASTA_sequence('/Volumes/USELESS/DATA/fasta/drosophila_melanogaster/cds/Drosophila_melanogaster.BDGP6.cds.all.fa.gz')
-fasta['mouse'] = get_FASTA_sequence('/Volumes/USELESS/DATA/fasta/mus_musculus/cds/Mus_musculus.GRCm38.cds.all.fa.gz')
 fasta['yeast'] = get_FASTA_sequence('/Volumes/USELESS/DATA/fasta/saccharomyces_cerevisiae/cds/Saccharomyces_cerevisiae.R64-1-1.cds.all.fa.gz')
-### get our, giraldez...
+fasta['fruitfly'] = get_FASTA_sequence('/Volumes/USELESS/DATA/fasta/drosophila_melanogaster/cds/Drosophila_melanogaster.BDGP6.cds.all.fa.gz')
+fasta['zebrafish'] = get_FASTA_sequence('/Volumes/USELESS/DATA/fasta/danio_rerio/GRCz10/cds/Danio_rerio.GRCz10.cds.all.fa.gz')
+# names(fasta_cdna) <- sapply(names(fasta_cdna), function(x){substr(x,1,18)})
+for key in fasta['zebrafish'].keys():
+	fasta['zebrafish'][key[0:18]] = fasta['zebrafish'][key]
+	del fasta['zebrafish'][key]
 
-############
-### GET GENES WITH PEAKS!!!, change in line 33
-gwpeaks = {}
-for org in organisms:
-	gwpeaks[org] = {}
-	dictionary = eval(org)
-	for stage in dictionary:
-		for tr in dictionary[stage]:
-			if not tr in gwpeaks[org]:
-				gwpeaks[org][tr] = []
-				gwpeaks[org][tr].extend(dictionary[stage][tr])
-			else:
-				gwpeaks[org][tr].extend(dictionary[stage][tr])
-
-# get unique peaks and sort...
-for org in gwpeaks:
-	for tr in gwpeaks[org]:
-		gwpeaks[org][tr] = sorted(set(gwpeaks[org][tr]))
-# pickle.dump(gwpeaks, gzip.open('/Volumes/USELESS/META/gwpeaks_our_gir_ff_mouse.p.gz', 'wb'))
-# pickle.load(gwpeaks, gzip.open('/Volumes/USELESS/META/gwpeaks_our_gir_ff_mouse.p.gz', 'rb'))
+fasta['mouse'] = get_FASTA_sequence('/Volumes/USELESS/DATA/fasta/mus_musculus/cds/Mus_musculus.GRCm38.cds.all.fa.gz')
+fasta['human'] = get_FASTA_sequence('/Volumes/USELESS/DATA/fasta/homo_sapiens/cds/Homo_sapiens.GRCh38.cds.all.fa.gz')
 
 
 
 
-
-ens_gname = runBiomart(organisms)
 
 conSS = {} ##### !!!!!!!!!!
 lostSS = {}
@@ -251,12 +231,11 @@ for n in range(len(organisms), 1, -1):
 
 
 ###
-pickle.dump(conSS, gzip.open('/Volumes/USELESS/META/conSS.p.gz', 'wb'))
-pickle.dump(lostSS, gzip.open('/Volumes/USELESS/META/lostSS.p.gz', 'wb'))
-### get zebrafish in one library perhaps...
+pickle.dump(conSS, gzip.open('/Volumes/USELESS/STALLING/conservation/conSS.p.gz', 'wb'))
+pickle.dump(lostSS, gzip.open('/Volumes/USELESS/STALLING/conservation/lostSS.p.gz', 'wb'))
+
+
 ### get sequences around stall sites
-
-
 
 conserved_stall_sites = {}
 for gene in conSS:
@@ -266,7 +245,7 @@ for gene in conSS:
 		for org in conSS[gene][peak]:
 			conserved_stall_sites[gene][peak][org[0]] = org[1]
 
-pickle.dump(conserved_stall_sites, gzip.open('/Volumes/USELESS/META/conserved_stall_sites.p.gz', 'wb'))
+pickle.dump(conserved_stall_sites, gzip.open('/Volumes/USELESS/STALLING/conservation/conserved_stall_sites.p.gz', 'wb'))
 
 lost_stall_sites = {}
 for gene in lostSS:
@@ -276,7 +255,7 @@ for gene in lostSS:
 		for org_tr in lostSS[gene][peak]:
 			lost_stall_sites[gene][peak][org_tr[0]] = org_tr[1]
 
-pickle.dump(lost_stall_sites, gzip.open('/Volumes/USELESS/META/lost_stall_sites.p.gz', 'wb'))
+pickle.dump(lost_stall_sites, gzip.open('/Volumes/USELESS/STALLING/conservation/lost_stall_sites.p.gz', 'wb'))
 
 
 css = conserved_stall_sites
@@ -285,7 +264,7 @@ lss = lost_stall_sites
 c = 0
 for g in css:
 	for p in css[g]:
-		if 'our' in css[g][p] and 'giraldez' in css[g][p] and 'fruitfly' in css[g][p] and 'mouse' in css[g][p] and 'yeast' in css[g][p]:
+		if 'yeast' in css[g][p] and 'fruitfly' in css[g][p] and 'zebrafish' in css[g][p] and 'mouse' in css[g][p] and 'human' in css[g][p]:
 			c += 1
 
 
@@ -293,7 +272,7 @@ for g in css:
 
 ##########
 # get sequence
-css_logo = open('/Volumes/USELESS/META/css_logo.txt', 'w')
+css_logo = open('/Volumes/USELESS/STALLING/conservation/css_logo.txt', 'w')
 for gene in css:
 	for peak in css[gene]:
 		for org in css[gene][peak]:
@@ -306,7 +285,7 @@ for gene in css:
 css_logo.close()
 
 
-lss_logo = open('/Volumes/USELESS/META/lss_logo.txt', 'w')
+lss_logo = open('/Volumes/USELESS/STALLING/conservation/lss_logo.txt', 'w')
 for gene in lss:
 	for peak in lss[gene]:
 		for org in lss[gene][peak]:
