@@ -1,33 +1,26 @@
 ### Call peaks (putative stall sites) from ribosome coverage data
 
-## read wig file with ribo coverage
 ## read BED (GTF?) file with genomic coordinates
+## read wig file with ribo coverage
 
-## call peaks:
-#    get longest tx per gene
-#    (optionally): exclude start/end of tx
-#    calculate z-scores
-#    save peaks
-
-from HTSeq import GenomicPosition, GenomicInterval
+from HTSeq import GenomicInterval
 import os
 import numpy as np
 from scipy import sparse
 from bx.binned_array import BinnedArray
 
-
-
 # import _pickle as pickle
 # import gzip
 
-# geneToInterval[tx_name] - list of exons (GenomicInterval objects)
 
 def read_BED(bed_file):
+	''' Reads genomic and mRNA coordinates from BED file.
+		Returns dictionary of genomic intervals (exons) for each transcript
+		and dictionary of CDS start and stop on mRNA coordinates. '''
+ 
 	bed = open(bed_file, "r")
  
-	intervals = set()
 	geneToInterval = {}
-	geneLength = {}
 	cds = {}
  
 	for line in bed:
@@ -55,7 +48,6 @@ def read_BED(bed_file):
 		if geneStr in geneToInterval:
 			sys.stderr.write("Warning: duplicate gene names: %s. Overwriting previous entry.\n" % geneStr)
 		geneToInterval[geneStr] = []
-		geneLength[geneStr] = 0
  
 		offset = 0
 		for exonStart, exonLen in zip(exonStarts, exonLengths):
@@ -66,10 +58,7 @@ def read_BED(bed_file):
  
 			# genomic intervals
 			interval = GenomicInterval(chrom, s, e, strand)
-			intervals.add(interval)
- 
 			geneToInterval[geneStr].append(interval)
-			geneLength[geneStr] += interval.length
  
 			# mRNA coordinates
 			if cds_start >= exonStart and cds_start <= exonStart+exonLen:
@@ -88,7 +77,7 @@ def read_BED(bed_file):
 			cds[geneStr] = []
 		cds[geneStr].append((new_cds_start, new_cds_end))
  
-	return intervals, geneToInterval, geneLength, cds
+	return geneToInterval, cds
 
 
 
@@ -96,7 +85,7 @@ def read_WIG(wig_file):
 	wig = open(wig_file, "r")
 	ribo_cov = {}
 	for line in wig:
-		if line.startswith('variableStep'):  # do variable step stuff
+		if line.startswith('variableStep'):  # specific for Shoelaces wig files
 			stepType = 'variable'
 			fields = line.split()[1:]
 			declarations = dict([(p[0], p[1].strip('"')) for p in [x.split("=") for x in fields]])
@@ -118,9 +107,10 @@ def fetch_scores(ribo_cov, chr, st, end):
 		return [np.nan]*(end-st)
 
 
-def extract_intervals_from_wigs(dirpath, list_of_transcripts, geneToInterval):
+def extract_intervals_from_wigs_per_length(dirpath, list_of_transcripts, geneToInterval):
 	""" Dumps transcript coverage into python dictionary.
-		 list_of_transcripts (cds) and geneToInterval are from read_BED function"""
+		dirpath is a path to directory with two directories: 'fwd' and 'rev' containing wig files split by length.
+		list_of_transcripts (cds) and geneToInterval are from read_BED function. """
 	fwd_handles = []
 	for file in (filter(lambda f: not f.startswith('.'), os.listdir(os.path.join(dirpath, 'fwd')))):
 		fwd_handles.extend([read_WIG(os.path.join(dirpath, 'fwd', file))])
@@ -158,14 +148,14 @@ def extract_intervals_from_wigs(dirpath, list_of_transcripts, geneToInterval):
 	return transcripts_lengths
 
 
-(intervals, geneToInterval, geneLength, orfs) = BED_to_intervals(bedpath)
+bed = '/Volumes/USELESS/DATA/genomes/BED/Mus_musculus.GRCm38.79.chr.bed'
+wig_fwd = '/Volumes/USELESS/STALLING/wigs/one_file/mouse_ingolia2011_NONE-forward.wig'
+wig_rev = '/Volumes/USELESS/STALLING/wigs/one_file/mouse_ingolia2011_NONE-reverse.wig'
+
+(geneToInterval, orfs) = BED_to_intervals(bed)
 main_dir = '/Volumes/USELESS/outputs_MAC/Zv9/our_remapped/aln3/by_length/5_Bud'
 tr_len = extract_intervals_from_wigs(main_dir, orfs, geneToInterval)
 
-# (intervals, geneToInterval, geneLength, orfs) = BED_to_intervals(bedpath)
-# main_dir = '/Volumes/USELESS/outputs_MAC/Zv9/our_remapped/aln3/by_length/5_Bud'
-# tr_len = extract_intervals_from_wigs(main_dir, orfs, geneToInterval)
 
-# remove intervals, geneLength
 # speed up extract_intervals from wigs
 # make options for single and split by length wig files
