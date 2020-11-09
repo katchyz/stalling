@@ -20,8 +20,8 @@ def read_BED(bed_file):
  
 	bed = open(bed_file, "r")
  
-	geneToInterval = {}
-	cds = {}
+	genomic_coord = {}
+	cds_coord = {}
  
 	for line in bed:
 		gene = line.split("\t")
@@ -45,9 +45,9 @@ def read_BED(bed_file):
 		if gene[11][-1] == ",":
 			exonStarts.pop()
  
-		if geneStr in geneToInterval:
+		if geneStr in genomic_coord:
 			sys.stderr.write("Warning: duplicate gene names: %s. Overwriting previous entry.\n" % geneStr)
-		geneToInterval[geneStr] = []
+		genomic_coord[geneStr] = []
  
 		offset = 0
 		for exonStart, exonLen in zip(exonStarts, exonLengths):
@@ -58,7 +58,7 @@ def read_BED(bed_file):
  
 			# genomic intervals
 			interval = GenomicInterval(chrom, s, e, strand)
-			geneToInterval[geneStr].append(interval)
+			genomic_coord[geneStr].append(interval)
  
 			# mRNA coordinates
 			if cds_start >= exonStart and cds_start <= exonStart+exonLen:
@@ -74,10 +74,10 @@ def read_BED(bed_file):
 			continue
  
 		if not geneStr in cds:
-			cds[geneStr] = []
-		cds[geneStr].append((new_cds_start, new_cds_end))
+			cds_coord[geneStr] = []
+		cds_coord[geneStr].append((new_cds_start, new_cds_end))
  
-	return geneToInterval, cds
+	return genomic_coord, cds_coord
 
 
 
@@ -100,62 +100,130 @@ def read_WIG(wig_file):
 	return ribo_cov
 
 
-def fetch_scores(ribo_cov, chr, st, end):
-	if chr in ribo_cov.keys():
-		return [ ribo_cov[chr][i] for i in range(st,end)]
-	else:
-		return [np.nan]*(end-st)
+# def fetch_scores(ribo_cov, chr, st, end):
+# 	if chr in ribo_cov.keys():
+# 		return [ ribo_cov[chr][i] for i in range(st,end)]
+# 	else:
+# 		return [np.nan]*(end-st)
 
 
-def extract_intervals_from_wigs_per_length(dirpath, list_of_transcripts, geneToInterval):
+def extract_intervals_from_wigs(wig_fwd, wig_rev, cds_coord, genomic_coord, exp_exons=False):
 	""" Dumps transcript coverage into python dictionary.
 		dirpath is a path to directory with two directories: 'fwd' and 'rev' containing wig files split by length.
-		list_of_transcripts (cds) and geneToInterval are from read_BED function. """
+		CDS_coord and genomic_coord are from read_BED function.
+		exp_exons=True returns full tx coverage, exons=False returns CDS coverage. """
+ 
+	wf = read_WIG(wig_fwd)
+	wr = read_WIG(wig_rev)
+ 
+	orf_cov = {}
+	# for every transcript (from BED)
+	for tr in cds_coord:
+		strand = genomic_coord[tr][0].strand
+		if strand == '+':
+			handle = wf
+		elif strand == '-':
+			handle = wr
+ 
+		# for every exon on transcript
+		exons = np.ndarray(0)
+		for interval in genomic_coord[tr]:
+			if interval.chrom in handle.keys():
+				exonint = handle[interval.chrom].get_range(interval.start+1, interval.end+1)
+				exons = np.append(exons, exonint)
+				# cds[np.isnan(cds)] = 0 # get all exons for one handle
+ 
+		# if all values are nan, ignore transcript
+		if all(np.isnan(exons)):
+			continue
+ 
+		# flip for '-' strand
+		if strand == '-':
+			exons = exons[::-1]
+ 
+		### get ORF positions
+		cds = exons[cds_coord[tr][0][0]:cds_coord[tr][0][1]]
+ 
+		# if all values are nan, ignore transcript
+		if all(np.isnan(cds)):
+			continue
+ 
+		### put all into a dictionary, return CDS coverage by default
+		if exp_exons == True:
+			orf_cov[tr] = exons
+		else:
+			orf_cov[tr] = cds
+ 
+	return orf_cov
+
+
+def extract_intervals_from_wigs_per_length(dirpath, cds_coord, genomic_coord, exp_exons=True):
+	""" Dumps transcript coverage into python dictionary.
+		dirpath is a path to directory with two directories: 'fwd' and 'rev' containing wig files split by length.
+		list_of_transcripts (cds) and geneToInterval are from read_BED function.
+		exp_exons=True returns full tx coverage, exons=False returns CDS coverage. """
+ 
 	fwd_handles = []
 	for file in (filter(lambda f: not f.startswith('.'), os.listdir(os.path.join(dirpath, 'fwd')))):
 		fwd_handles.extend([read_WIG(os.path.join(dirpath, 'fwd', file))])
 	rev_handles = []
 	for file in (filter(lambda f: not f.startswith('.'), os.listdir(os.path.join(dirpath, 'rev')))):
 		rev_handles.extend([read_WIG(os.path.join(dirpath, 'rev', file))])
-	transcripts_lengths = {}
-	for tr in list_of_transcripts:
-		strand = geneToInterval[tr][0].strand
+ 
+	orf_cov = {}
+	for tr in cds_coord:
+		strand = genomic_coord[tr][0].strand
 		if strand == '+':
 			handles = fwd_handles
 		elif strand == '-':
 			handles = rev_handles
-		### initiate sequence array
-		sequencearray = np.zeros((len(fwd_handles), geneLength[tr])) # IF USING FWD_HANDLES!
-		for i in range(len(handles)): # for different read lengths
-			cds = np.array([])
-			for interval in geneToInterval[tr]:
-				exonint = np.asarray(fetch_scores(handles[i], interval.chrom, interval.start+1, interval.end+1))
-				cds = np.append(cds, exonint)
-			cds[np.isnan(cds)] = 0 # get all exons for one handle
-			sequencearray[i] = cds ###lengths???
-		### get ORF positions
-		orfarray = sequencearray[:, orfs[tr][0][0]:orfs[tr][0][1]]
-		# for + strand, sparse
-		sp_orf = sparse.csr_matrix(orfarray)
-		sp_tran = sparse.csr_matrix(sequencearray)
+ 
+		exons_per_len = np.ndarray(0)
+		# for different read lengths
+		for i in range(len(handles)):
+			exons = np.ndarray(0)
+			for interval in genomic_coord[tr]:
+				if interval.chrom in handles[i].keys():
+					exonint = handles[i][interval.chrom].get_range(interval.start+1, interval.end+1)
+					exons = np.append(exons, exonint)
+					# exons[np.isnan(exons)] = 0 # get all exons for one handle
+			if i == 0:
+				exons_per_len = np.append(exons_per_len, exons)
+			else:
+				np.vstack((exons_per_len, exons))
+ 
+		# if all values are nan, ignore transcript
+		if np.ndarray.all(np.isnan(exons_per_len)):
+			continue
+ 
+		# flip for '-' strand
 		if strand == '-':
-			orfarray = np.fliplr(orfarray)
-			sequencearray = np.fliplr(sequencearray)
-			sp_orf = sparse.csr_matrix(orfarray)
-			sp_tran = sparse.csr_matrix(sequencearray)
-		### put all into a dictionary
-		transcripts_lengths[tr] = sp_tran, sp_orf
-	return transcripts_lengths
+			exons_per_len = np.flip(exons_per_len)
+ 
+		### get ORF positions
+		cds = exons[:, cds_coord[tr][0][0]:cds_coord[tr][0][1]]
+ 
+		# if all values are nan, ignore transcript
+		if np.ndarray.all(np.isnan(cds)):
+			continue
+ 
+		### put all into a dictionary, return CDS coverage by default
+		if exp_exons == True:
+			orf_cov[tr] = exons_per_len
+		else:
+			orf_cov[tr] = cds
+ 
+	return orf_cov
+
+
+
 
 
 bed = '/Volumes/USELESS/DATA/genomes/BED/Mus_musculus.GRCm38.79.chr.bed'
 wig_fwd = '/Volumes/USELESS/STALLING/wigs/one_file/mouse_ingolia2011_NONE-forward.wig'
 wig_rev = '/Volumes/USELESS/STALLING/wigs/one_file/mouse_ingolia2011_NONE-reverse.wig'
 
-(geneToInterval, orfs) = BED_to_intervals(bed)
-main_dir = '/Volumes/USELESS/outputs_MAC/Zv9/our_remapped/aln3/by_length/5_Bud'
-tr_len = extract_intervals_from_wigs(main_dir, orfs, geneToInterval)
+(genomic_coord, cds_coord) = read_BED(bed)
+wig_cov = extract_intervals_from_wigs(wig_fwd, wig_rev, cds_coord, genomic_coord)
 
 
-# speed up extract_intervals from wigs
-# make options for single and split by length wig files
