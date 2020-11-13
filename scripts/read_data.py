@@ -3,11 +3,11 @@
 	Maps the coverage to transcripts annotations (from read_genome_data.py).
 '''
 
+# fix 0/1-based
 
-import os
 import numpy as np
 from bx.binned_array import BinnedArray
-
+import os
 # import _pickle as pickle
 # import gzip
 
@@ -28,14 +28,14 @@ def read_WIG(wig_file):
 			pos = int(tmp[0])
 			val = float(tmp[1])
 			ribo_cov[chrom][pos] = val
+	wig.close()
 	return ribo_cov
 
 
 
-def extract_intervals_from_wigs(wig_fwd, wig_rev, cds_coord, genomic_coord, exp_exons=False):
+def extract_intervals_from_wigs(wig_fwd, wig_rev, tx_coord, exp_exons=False):
 	""" Dumps transcript coverage into python dictionary.
-		dirpath is a path to directory with two directories: 'fwd' and 'rev' containing wig files split by length.
-		CDS_coord and genomic_coord are from read_BED function.
+		tx_coord are transcript annotations from read_GTF/read_BED function.
 		exp_exons=True returns full tx coverage, exons=False returns CDS coverage. """
  
 	wf = read_WIG(wig_fwd)
@@ -43,9 +43,9 @@ def extract_intervals_from_wigs(wig_fwd, wig_rev, cds_coord, genomic_coord, exp_
  
 	orf_cov = {}
 	# for every transcript (from BED)
-	for tr in cds_coord:
+	for tx in tx_coord:
 		# strand = genomic_coord[tr][0].strand
-		strand = genomic_coord[tr][0][3]
+		strand = tx_coord[tx]['strand']
 		if strand == '+':
 			handle = wf
 		elif strand == '-':
@@ -53,13 +53,16 @@ def extract_intervals_from_wigs(wig_fwd, wig_rev, cds_coord, genomic_coord, exp_
  
 		# for every exon on transcript
 		exons = np.ndarray(0)
-		for interval in genomic_coord[tr]:
-			# if interval.chrom in handle.keys():
-			if interval[3] in handle.keys():
-				# exonint = handle[interval.chrom].get_range(interval.start+1, interval.end+1)
-				exonint = handle[interval[3]].get_range(interval[1]+1, interval[2]+1)
-				exons = np.append(exons, exonint)
-				# cds[np.isnan(cds)] = 0 # get all exons for one handle
+		if not tx_coord[tx]['chromosome'] in handle.keys():
+			continue
+		else:
+			chrom = tx_coord[tx]['chromosome']
+ 
+		for i in range(len(tx_coord[tx]['exon_starts'])):
+			start = tx_coord[tx]['exon_starts'][i]
+			end = tx_coord[tx]['exon_ends'][i]
+			exonint = handle[chrom].get_range(start, end+1) # +/-1 ??
+			exons = np.append(exons, exonint)
  
 		# if all values are nan, ignore transcript
 		if all(np.isnan(exons)):
@@ -70,7 +73,7 @@ def extract_intervals_from_wigs(wig_fwd, wig_rev, cds_coord, genomic_coord, exp_
 			exons = exons[::-1]
  
 		### get ORF positions
-		cds = exons[cds_coord[tr][0][0]:cds_coord[tr][0][1]]
+		cds = exons[tx_coord[tx]['cds_coord'][0]:tx_coord[tx]['cds_coord'][1]]
  
 		# if all values are nan, ignore transcript
 		if all(np.isnan(cds)):
@@ -78,14 +81,14 @@ def extract_intervals_from_wigs(wig_fwd, wig_rev, cds_coord, genomic_coord, exp_
  
 		### put all into a dictionary, return CDS coverage by default
 		if exp_exons == True:
-			orf_cov[tr] = exons
+			orf_cov[tx] = exons
 		else:
-			orf_cov[tr] = cds
+			orf_cov[tx] = cds
  
 	return orf_cov
 
 
-def extract_intervals_from_wigs_per_length(dirpath, cds_coord, genomic_coord, exp_exons=True):
+def extract_intervals_from_wigs_per_length(dirpath, tx_coord, exp_exons=True):
 	""" Dumps transcript coverage into python dictionary.
 		dirpath is a path to directory with two directories: 'fwd' and 'rev' containing wig files split by length.
 		list_of_transcripts (cds) and geneToInterval are from read_BED function.
@@ -99,25 +102,28 @@ def extract_intervals_from_wigs_per_length(dirpath, cds_coord, genomic_coord, ex
 		rev_handles.extend([read_WIG(os.path.join(dirpath, 'rev', file))])
  
 	orf_cov = {}
-	for tr in cds_coord:
+	for tx in tx_coord:
 		# strand = genomic_coord[tr][0].strand
-		strand = genomic_coord[tr][0][3]
+		strand = tx_coord[tx]['strand']
 		if strand == '+':
 			handles = fwd_handles
 		elif strand == '-':
 			handles = rev_handles
  
 		exons_per_len = np.ndarray(0)
+		if not tx_coord[tx]['chromosome'] in handle.keys():
+			continue
+		else:
+			chrom = tx_coord[tx]['chromosome']
+ 
 		# for different read lengths
 		for i in range(len(handles)):
 			exons = np.ndarray(0)
-			for interval in genomic_coord[tr]:
-				# if interval.chrom in handles[i].keys():
-				if interval[3] in handle.keys():
-					# exonint = handles[i][interval.chrom].get_range(interval.start+1, interval.end+1)
-					exonint = handle[interval[3]].get_range(interval[1]+1, interval[2]+1)
-					exons = np.append(exons, exonint)
-					# exons[np.isnan(exons)] = 0 # get all exons for one handle
+			for i in range(len(tx_coord[tx]['exon_starts'])):
+				start = tx_coord[tx]['exon_starts'][i]
+				end = tx_coord[tx]['exon_ends'][i]
+				exonint = handle[chrom].get_range(start, end+1) # +/-1 ??
+				exons = np.append(exons, exonint)
 			if i == 0:
 				exons_per_len = np.append(exons_per_len, exons)
 			else:
@@ -132,7 +138,7 @@ def extract_intervals_from_wigs_per_length(dirpath, cds_coord, genomic_coord, ex
 			exons_per_len = np.flip(exons_per_len)
  
 		### get ORF positions
-		cds = exons[:, cds_coord[tr][0][0]:cds_coord[tr][0][1]]
+		cds = exons[:, tx_coord[tx]['cds_coord'][0]:tx_coord[tx]['cds_coord'][1]]
  
 		# if all values are nan, ignore transcript
 		if np.ndarray.all(np.isnan(cds)):
@@ -140,20 +146,20 @@ def extract_intervals_from_wigs_per_length(dirpath, cds_coord, genomic_coord, ex
  
 		### put all into a dictionary, return CDS coverage by default
 		if exp_exons == True:
-			orf_cov[tr] = exons_per_len
+			orf_cov[tx] = exons_per_len
 		else:
-			orf_cov[tr] = cds
+			orf_cov[tx] = cds
  
 	return orf_cov
 
 
 
-
+#######
+# WIG - one file
 
 wig_fwd = '/Volumes/USELESS/STALLING/wigs/one_file/mouse_ingolia2011_NONE-forward.wig'
 wig_rev = '/Volumes/USELESS/STALLING/wigs/one_file/mouse_ingolia2011_NONE-reverse.wig'
 
-
-wig_cov = extract_intervals_from_wigs(wig_fwd, wig_rev, cds_coord, genomic_coord)
+wig_cov = extract_intervals_from_wigs(wig_fwd, wig_rev, transcripts)
 
 
