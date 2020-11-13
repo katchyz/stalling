@@ -1,4 +1,4 @@
-''' Read genome annotations (GTF or BED).
+''' Reads genome annotations (GTF or BED).
 	Returns a dictionary of annotations for each transcript:
 	annotations[tx] = { gene_id: gene_id
 						chromosome: chrom

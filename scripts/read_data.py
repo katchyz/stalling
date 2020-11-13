@@ -1,9 +1,9 @@
-### Call peaks (putative stall sites) from ribosome coverage data
+''' Reads wiggle files with ribosome profiling coverage data (from Shoelaces).
+	Data can be in single file or split by length (and saved in a 'fwd' and 'rev' directories.)
+	Maps the coverage to transcripts annotations (from read_genome_data.py).
+'''
 
-## read BED (GTF?) file with genomic coordinates
-## read wig file with ribo coverage
 
-# from HTSeq import GenomicInterval
 import os
 import numpy as np
 from bx.binned_array import BinnedArray
@@ -30,12 +30,6 @@ def read_WIG(wig_file):
 			ribo_cov[chrom][pos] = val
 	return ribo_cov
 
-
-# def fetch_scores(ribo_cov, chr, st, end):
-# 	if chr in ribo_cov.keys():
-# 		return [ ribo_cov[chr][i] for i in range(st,end)]
-# 	else:
-# 		return [np.nan]*(end-st)
 
 
 def extract_intervals_from_wigs(wig_fwd, wig_rev, cds_coord, genomic_coord, exp_exons=False):
