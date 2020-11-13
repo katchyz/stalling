@@ -6,81 +6,10 @@
 # from HTSeq import GenomicInterval
 import os
 import numpy as np
-from scipy import sparse
 from bx.binned_array import BinnedArray
-import sys
 
 # import _pickle as pickle
 # import gzip
-
-
-def read_BED(bed_file):
-	''' Reads genomic and mRNA coordinates from BED file.
-		Returns dictionary of genomic intervals (exons) for each transcript
-		and dictionary of CDS start and stop on mRNA coordinates. '''
- 
-	bed = open(bed_file, "r")
- 
-	genomic_coord = {}
-	cds_coord = {}
- 
-	for line in bed:
-		gene = line.split("\t")
-		chrom = gene[0]
-		tx_start = int(gene[1])
-		geneStr = gene[3] #"%s:::%s" % (gene[3], gene[1])
-		strand = gene[5]
-		cds_start = int(gene[6]) - tx_start
-		cds_end = int(gene[7]) - tx_start
- 
-		# Non-coding
-		if cds_start == cds_end:
-			continue
-		
-		exonLengths = gene[10].split(",")
-		exonStarts = gene[11].split(",")
- 
-		# BED files occasionally end with a ","
-		if gene[10][-1] == ",":
-			exonLengths.pop()
-		if gene[11][-1] == ",":
-			exonStarts.pop()
- 
-		if geneStr in genomic_coord:
-			sys.stderr.write("Warning: duplicate gene names: %s. Overwriting previous entry.\n" % geneStr)
-		genomic_coord[geneStr] = []
- 
-		offset = 0
-		for exonStart, exonLen in zip(exonStarts, exonLengths):
-			exonStart = int(exonStart)
-			exonLen = int(exonLen)
-			s = tx_start + exonStart
-			e = s + exonLen
- 
-			# genomic intervals
-			# interval = GenomicInterval(chrom, s, e, strand)
-			interval = (chrom, s, e, strand)
-			genomic_coord[geneStr].append(interval)
- 
-			# mRNA coordinates
-			if cds_start >= exonStart and cds_start <= exonStart+exonLen:
-				new_cds_start = offset + (cds_start - exonStart)
- 
-			if cds_end >= exonStart and cds_end <= exonStart+exonLen:
-				new_cds_end = offset + (cds_end - exonStart)
- 
-			offset += exonLen
- 
-		if new_cds_start > new_cds_end:
-			sys.stderr.write("CDS length is negative for transcript %s\n" % gene[3])
-			continue
- 
-		if not geneStr in cds_coord:
-			cds_coord[geneStr] = []
-		cds_coord[geneStr].append((new_cds_start, new_cds_end))
- 
-	return genomic_coord, cds_coord
-
 
 
 def read_WIG(wig_file):
@@ -227,11 +156,10 @@ def extract_intervals_from_wigs_per_length(dirpath, cds_coord, genomic_coord, ex
 
 
 
-bed = '/Volumes/USELESS/DATA/genomes/BED/Mus_musculus.GRCm38.79.chr.bed'
 wig_fwd = '/Volumes/USELESS/STALLING/wigs/one_file/mouse_ingolia2011_NONE-forward.wig'
 wig_rev = '/Volumes/USELESS/STALLING/wigs/one_file/mouse_ingolia2011_NONE-reverse.wig'
 
-(genomic_coord, cds_coord) = read_BED(bed)
+
 wig_cov = extract_intervals_from_wigs(wig_fwd, wig_rev, cds_coord, genomic_coord)
 
 

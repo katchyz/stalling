@@ -3,11 +3,11 @@ import cPickle as pickle
 import gzip
 import numpy as np
 from scipy import sparse, stats
-from shoelaces_full_distribution import BED_get_CDS_mRNA_coord, BED_to_intervals
 
 ## call peaks:
 #    get longest tx per gene
 #    (optionally): exclude start/end of tx
+#	 get well expressed transcripts
 #    calculate z-scores
 #    save peaks
 
