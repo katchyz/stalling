@@ -3,11 +3,12 @@
 ## read BED (GTF?) file with genomic coordinates
 ## read wig file with ribo coverage
 
-from HTSeq import GenomicInterval
+# from HTSeq import GenomicInterval
 import os
 import numpy as np
 from scipy import sparse
 from bx.binned_array import BinnedArray
+import sys
 
 # import _pickle as pickle
 # import gzip
@@ -57,7 +58,8 @@ def read_BED(bed_file):
 			e = s + exonLen
  
 			# genomic intervals
-			interval = GenomicInterval(chrom, s, e, strand)
+			# interval = GenomicInterval(chrom, s, e, strand)
+			interval = (chrom, s, e, strand)
 			genomic_coord[geneStr].append(interval)
  
 			# mRNA coordinates
@@ -73,7 +75,7 @@ def read_BED(bed_file):
 			sys.stderr.write("CDS length is negative for transcript %s\n" % gene[3])
 			continue
  
-		if not geneStr in cds:
+		if not geneStr in cds_coord:
 			cds_coord[geneStr] = []
 		cds_coord[geneStr].append((new_cds_start, new_cds_end))
  
@@ -119,7 +121,8 @@ def extract_intervals_from_wigs(wig_fwd, wig_rev, cds_coord, genomic_coord, exp_
 	orf_cov = {}
 	# for every transcript (from BED)
 	for tr in cds_coord:
-		strand = genomic_coord[tr][0].strand
+		# strand = genomic_coord[tr][0].strand
+		strand = genomic_coord[tr][0][3]
 		if strand == '+':
 			handle = wf
 		elif strand == '-':
@@ -128,8 +131,10 @@ def extract_intervals_from_wigs(wig_fwd, wig_rev, cds_coord, genomic_coord, exp_
 		# for every exon on transcript
 		exons = np.ndarray(0)
 		for interval in genomic_coord[tr]:
-			if interval.chrom in handle.keys():
-				exonint = handle[interval.chrom].get_range(interval.start+1, interval.end+1)
+			# if interval.chrom in handle.keys():
+			if interval[3] in handle.keys():
+				# exonint = handle[interval.chrom].get_range(interval.start+1, interval.end+1)
+				exonint = handle[interval[3]].get_range(interval[1]+1, interval[2]+1)
 				exons = np.append(exons, exonint)
 				# cds[np.isnan(cds)] = 0 # get all exons for one handle
  
@@ -172,7 +177,8 @@ def extract_intervals_from_wigs_per_length(dirpath, cds_coord, genomic_coord, ex
  
 	orf_cov = {}
 	for tr in cds_coord:
-		strand = genomic_coord[tr][0].strand
+		# strand = genomic_coord[tr][0].strand
+		strand = genomic_coord[tr][0][3]
 		if strand == '+':
 			handles = fwd_handles
 		elif strand == '-':
@@ -183,8 +189,10 @@ def extract_intervals_from_wigs_per_length(dirpath, cds_coord, genomic_coord, ex
 		for i in range(len(handles)):
 			exons = np.ndarray(0)
 			for interval in genomic_coord[tr]:
-				if interval.chrom in handles[i].keys():
-					exonint = handles[i][interval.chrom].get_range(interval.start+1, interval.end+1)
+				# if interval.chrom in handles[i].keys():
+				if interval[3] in handle.keys():
+					# exonint = handles[i][interval.chrom].get_range(interval.start+1, interval.end+1)
+					exonint = handle[interval[3]].get_range(interval[1]+1, interval[2]+1)
 					exons = np.append(exons, exonint)
 					# exons[np.isnan(exons)] = 0 # get all exons for one handle
 			if i == 0:
