@@ -169,7 +169,7 @@ def read_BED(bed_file):
 		# Non-coding
 		if cds_start == cds_end:
 			continue
-		
+ 
 		exonLengths = gene[10].split(",")
 		exonStarts = gene[11].split(",")
  
@@ -179,7 +179,13 @@ def read_BED(bed_file):
 		if gene[11][-1] == ",":
 			exonStarts.pop()
  
-		genomic_coord[geneStr] = []
+		genomic_coord[geneStr] = {}
+		genomic_coord[geneStr]['gene_id'] = ''
+		genomic_coord[geneStr]['chromosome'] = chrom
+		genomic_coord[geneStr]['strand'] = strand
+		genomic_coord[geneStr]['exon_starts'] = []
+		genomic_coord[geneStr]['exon_ends'] = []
+		genomic_coord[geneStr]['cds_coord'] = []
  
 		offset = 0
 		for exonStart, exonLen in zip(exonStarts, exonLengths):
@@ -188,10 +194,9 @@ def read_BED(bed_file):
 			s = tx_start + exonStart
 			e = s + exonLen
  
-			# genomic intervals
-			# interval = GenomicInterval(chrom, s, e, strand)
-			interval = (chrom, s, e, strand)
-			genomic_coord[geneStr].append(interval)
+			# exon intervals
+			genomic_coord[geneStr]['exon_starts'].append(s)
+			genomic_coord[geneStr]['exon_ends'].append(e)
  
 			# mRNA coordinates
 			if cds_start >= exonStart and cds_start <= exonStart+exonLen:
@@ -205,28 +210,25 @@ def read_BED(bed_file):
 		if new_cds_start > new_cds_end:
 			continue # CDS length is negative
  
-		if not geneStr in cds_coord:
-			cds_coord[geneStr] = []
-		cds_coord[geneStr].append((new_cds_start, new_cds_end))
+		genomic_coord[geneStr]['cds_coord'].append(new_cds_start)
+		genomic_coord[geneStr]['cds_coord'].append(new_cds_end)
  
 	bed.close()
  
-	return genomic_coord, cds_coord
+	return genomic_coord
 
 
 
+#######
+# GTF
 gtf = '/Volumes/USELESS/DATA/genomes/GTF/Mus_musculus.GRCm38.79.chr.gtf'
-# transcripts = parseGTFFile(gtf)
-transcripts = read_GTF(gtf)
+annotations = read_GTF(gtf)
 
-
-transcripts['ENSMUST00000152946']
-transcripts['ENSMUST00000026256']
-
-
+# BED
 bed = '/Volumes/USELESS/DATA/genomes/BED/Mus_musculus.GRCm38.79.chr.bed'
-(genomic_coord, cds_coord) = read_BED(bed)
+annotations = read_BED(bed)
 
-
+annotations['ENSMUST00000152946']
+annotations['ENSMUST00000026256']
 
 	
