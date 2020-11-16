@@ -10,7 +10,7 @@ Functions for reading GTF and BED files.
 Functions from reading wiggle files and mapping the coverage to genomic annotations.
 
 #### `call_peaks.py`
-get putative stall sites..
+Functions for finding peaks (putative stall sites) on transcripts.
 
 #### `conserved_stall_sites`
 get conserved stall sites..

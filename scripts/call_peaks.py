@@ -1,65 +1,90 @@
-import os
-import cPickle as pickle
-import gzip
+''' Finds the longest transcript per gene (optionally),
+	selects transcripts with good coverage (median codon coverage > 0),
+	calculates z-score coverage,
+	calls peaks for each transcript.
+'''
+
 import numpy as np
-from scipy import sparse, stats
-
-## call peaks:
-#    get longest tx per gene
-#    (optionally): exclude start/end of tx
-#	 get well expressed transcripts
-#    calculate z-scores
-#    save peaks
-
-# BEDfile = ...
-
-def get_well_expressed_transcripts(data_dict, list_of_transcripts):
-	""" Given the dictionary of all stages and transcripts, and a list of transcripts,
-	(list of transcripts: orfs from shoelaces_full_distribution)
-	returns the dictionary of highly expressed transcripts per each stage """
-	codon_cov_high = {}
-	for stage in data_dict:
-		codon_cov_high[stage] = {}
-		for tr in list_of_transcripts:
-			nt_cov = np.asarray(data_dict[stage][tr][1].sum(axis=0))[0]
-			# calculate codon coverage
-			if (len(nt_cov) % 3 == 0) and (len(nt_cov) > 33):
-				pep_array = np.zeros(len(nt_cov)/3)
-				for i in range(0, len(nt_cov), 3):
-					pep_array[i/3] = nt_cov[i] + nt_cov[i+1] + nt_cov[i+2]
-				# choose CDSs where at least 50% of codons have at least one footprint
-				if np.median(pep_array) > 0:
-					codon_cov_high[stage][tr] = pep_array
-	return codon_cov_high
+from scipy import stats
 
 
-def calculate_zscores(codon_cov_high):
+
+def get_longest_transcript(transcripts):
+	""" Takes output from read_BED or read_GTF and returns only the longest tx (cds) per gene """
+ 
+	longest_tx = {}
+ 
+	for tx in transcripts:
+		gene = transcripts[tx]['gene_id']
+		cds_len = transcripts[tx]['cds_coord'][1] - transcripts[tx]['cds_coord'][0]
+ 
+		if not gene in longest_tx.keys():
+			longest_tx[gene] = transcripts[tx]
+			longest_tx[gene]['tx_id'] = tx
+		else:
+			if cds_len > longest_tx[gene]['cds_coord'][1] - longest_tx[gene]['cds_coord'][0]:
+				longest_tx[gene] = transcripts[tx]
+				longest_tx[gene]['tx_id'] = tx
+ 
+	return longest_tx
+
+
+def get_well_expressed_transcripts(ribo_cov):
+	""" Takes a dictionary of ribosome coverage and returns a dictionary with well expressed transcripts
+		(median codon coverage less than one). """
+ 
+	well_expr_tx = {}
+ 
+	for tx in ribo_cov:
+		# nt_cov = np.asarray(data_dict[stage][tr][1].sum(axis=0))[0] per length
+		nt_cov = np.nan_to_num(ribo_cov[tx])
+		# calculate codon coverage
+		if len(nt_cov) > 33: # len(nt_cov) % 3 == 0
+			pep_array = np.zeros(int(np.floor(len(nt_cov)/3)))
+			for i in range(0, int(np.floor(len(nt_cov)/3)*3), 3):
+				pep_array[int(i/3)] = nt_cov[i] + nt_cov[i+1] + nt_cov[i+2]
+ 
+			# choose CDSs where at least 50% of codons have at least one footprint
+			if np.median(pep_array) > 0:
+				well_expr_tx[tx] = pep_array
+ 
+		else:
+			print(f'Length of gene {tx} is less than 33 nt')
+ 
+	return well_expr_tx
+
+
+def calculate_zscores(well_expr_tx, start=1, end=2):
 	""" Given the dictionary of highly expressed transcripts, calculates
-	the z-scores, avoiding first and last codons """
+		the z-scores, avoiding first and last codons.
+		start and end are numbers of codons at the beginning/end of tx to exclude from calculation. """
+ 
 	zscores = {}
-	for stage in codon_cov_high:
-		zscores[stage] = {}
-		for tr in codon_cov_high[stage]:
-			zs = stats.zscore(codon_cov_high[stage][tr][1:-2])
-			zs = np.insert(zs, 0, 0) # add a zero for 1st codon
-			zs = np.append(zs, [0, 0]) # add a zero for last two codons
-			zscores[stage][tr] = zs
+ 
+	for tx in well_expr_tx:
+		zs = stats.zscore(well_expr_tx[tx][start:-end])
+		zs = np.insert(zs, 0, [0]*start) # add a zero for 1st codon
+		zs = np.append(zs, [0]*end) # add a zero for last two codons
+		zscores[tx] = zs
+ 
 	return zscores
 
-def get_genes_with_peaks(zscores, threshold):
-	""" Given the dictionary with z-scores and a threshold, return the dictionary
-	of transcripts with list of peaks, for each stage separately """
+
+def get_genes_with_peaks(zscores, threshold=5):
+	""" Given the dictionary with z-scores and a z-score threshold,
+		return the dictionary of transcripts with list of peaks. """
+ 
 	genes_with_peaks = {}
-	for stage in zscores:
-		genes_with_peaks[stage] = {}
-		for tr in zscores[stage]:
-			if max(zscores[stage][tr]) > threshold:
-				peak_positions = []
-				for i in range(len(zscores[stage][tr])):
-					if zscores[stage][tr][i] > threshold:
-						peak_positions += [i*3] # 1st nt in codon
-				genes_with_peaks[stage][tr] = peak_positions
+ 
+	for tx in zscores:
+		if max(zscores[tx]) > threshold:
+			peak_positions = np.where(zscores[tx] > threshold)[0] *3 # 1st nt in codon
+			genes_with_peaks[tx] = peak_positions
+ 
 	return genes_with_peaks
+
+
+
 
 
 def get_FASTA_sequence(filepath):
@@ -175,6 +200,14 @@ def write_peaks_to_BED_file(genes_with_peaks, filepath, geneToInterval, geneLeng
 					bed.write(geneToInterval[tr][0].chrom+'\t'+str(gen_st_pos)+'\t'+str(gen_end_pos)+'\t'+stage+'\t0\t'+geneToInterval[tr][0].strand+'\t'+str(gen_st_pos)+'\t'+str(gen_end_pos)+'\t'+'0,100,200'+'\n')
 
 
+
+
+
+longest_tx = get_longest_transcript(transcripts)
+ribo_cov = extract_intervals_from_wigs(wig_fwd, wig_rev, longest_tx)
+wet = get_well_expressed_transcripts(ribo_cov)
+zscores = calculate_zscores(wet, start=5, end=2)
+gwp = get_genes_with_peaks(zscores, threshold=5)
 
 
 
