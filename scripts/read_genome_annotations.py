@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 ''' Reads genome annotations (GTF or BED).
 	Returns a dictionary of annotations for each transcript:
 	annotations[tx] = { gene_id: gene_id

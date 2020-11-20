@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 ''' Reads wiggle files with ribosome profiling coverage data (from Shoelaces).
 	Data can be in single file or split by length (and saved in a 'fwd' and 'rev' directories.)
 	Maps the coverage to transcripts annotations (from read_genome_data.py).
