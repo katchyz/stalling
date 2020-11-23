@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 ### find conserved stall sites in different organisms
 
 import os.path

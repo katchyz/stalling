@@ -31,6 +31,18 @@ def get_longest_transcript(transcripts):
 	return longest_tx
 
 
+def set_keys_to_tx_id(longest_tx):
+	""" Changes the keys of longest_tx dictionary from gene_id to tx_id. """
+ 
+	longest_tx_id = {}
+ 
+	for gene in longest_tx:
+		tx = longest_tx[gene]['tx_id']
+		longest_tx_id[tx] = longest_tx[gene]
+ 
+	return longest_tx_id
+
+
 def get_well_expressed_transcripts(ribo_cov):
 	""" Takes a dictionary of ribosome coverage and returns a dictionary with well expressed transcripts
 		(median codon coverage less than one). """
@@ -90,6 +102,7 @@ def get_genes_with_peaks(zscores, threshold=5):
 
 
 longest_tx = get_longest_transcript(transcripts)
+longest_tx = set_keys_to_tx_id(longest_tx)
 ribo_cov = extract_intervals_from_wigs(wig_fwd, wig_rev, longest_tx)
 wet = get_well_expressed_transcripts(ribo_cov)
 zscores = calculate_zscores(wet, start=5, end=2)
