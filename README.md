@@ -27,4 +27,4 @@ Sequence data:
 
    `save_data.py` - writing peaks to BED file, saving data to and reading from gzip pickle python  
 
-   `plotting.py` (extra plotting functions) (TBD)  
+   `plotting.py` - extract fragment length and sequence data around peaks 
