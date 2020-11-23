@@ -10,8 +10,6 @@
 import numpy as np
 from bx.binned_array import BinnedArray
 import os
-# import _pickle as pickle
-# import gzip
 
 
 def read_WIG(wig_file):
