@@ -68,6 +68,28 @@ def load_data(filepath):
 
 
 
+organisms = ["yeast", "fruitfly", "zebrafish", "mouse", "human"]
+
+def export_CSS(conserved_stall_sites, organisms, filename='upsetr.csv'):
+	""" Exports conserved stall sites into CSV (for UpSetR plotting) """
+ 
+	f = open(filename, 'w')
+	f.write('gene_ss'+','+','.join([str(x) for x in organisms])+'\n')
+ 
+	for gene in conserved_stall_sites:
+		for peak_pos in conserved_stall_sites[gene]:
+			f.write(gene+'_'+peak_pos+',')
+			consorg = conserved_stall_sites[gene][peak_pos].keys()
+			#[org in d for org in organisms]
+			boo = [int(elem) for elem in [org in consorg for org in organisms]]
+			f.write(','.join([str(x) for x in boo]))
+			f.write('\n')
+ 
+	f.close()
+
+
+
+
 write_peaks_to_BED_file(gwp, '/Users/kasia/Desktop/test.bed', transcripts, lib='test_bed')
 
 
