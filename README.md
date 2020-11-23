@@ -5,13 +5,13 @@ ribosome stalling scripts
 
 #### Reading and manipulating data:
 
-Genomic coordinates:
+Genomic coordinates:  
    `read_genome_annotations.py` - reading GTF and BED files  
 
-Ribosome profiling data:
+Ribosome profiling data:  
    `read_data.py` - reading wiggle files and mapping the coverage to genomic annotations  
 
-Sequence data:
+Sequence data:  
    `read_sequence.py` and `translate.py` - reading FASTA files, translating DNA to protein sequence  
 
 
@@ -19,7 +19,7 @@ Sequence data:
 
    `call_peaks.py` - finding peaks (putative stall sites) on transcripts  
 
-   `conserved_stall_sites` - get conserved stall sites.. (TBD)
+   `conserved_stall_sites` - get conserved stall sites.. (TBD)  
    `old_CSS_biomart.py` (get xml writing and querying) (TBD)
 
 
