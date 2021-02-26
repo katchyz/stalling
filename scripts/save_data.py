@@ -88,9 +88,9 @@ def export_CSS(conserved_stall_sites, organisms, filename='upsetr.csv'):
 	f.close()
 
 
+######### EXAMPLE
 
-
-write_peaks_to_BED_file(gwp, '/Users/kasia/Desktop/test.bed', transcripts, lib='test_bed')
+# write_peaks_to_BED_file(gwp, '../DATA/test.bed', transcripts, lib='test_bed')
 
 
 

@@ -221,16 +221,16 @@ def read_BED(bed_file):
 
 
 
-#######
+######### EXAMPLE
 # GTF
-gtf = '/Volumes/USELESS/DATA/genomes/GTF/Mus_musculus.GRCm38.79.chr.gtf'
-annotations = read_GTF(gtf)
+# gtf = '../DATA/genomes/GTF/Mus_musculus.GRCm38.79.chr.gtf'
+# annotations = read_GTF(gtf)
 
 # BED
-bed = '/Volumes/USELESS/DATA/genomes/BED/Mus_musculus.GRCm38.79.chr.bed'
-annotations = read_BED(bed)
+# bed = '../DATA/genomes/BED/Mus_musculus.GRCm38.79.chr.bed'
+# annotations = read_BED(bed)
 
-annotations['ENSMUST00000152946']
-annotations['ENSMUST00000026256']
+# annotations['ENSMUST00000152946']
+# annotations['ENSMUST00000026256']
 
 	

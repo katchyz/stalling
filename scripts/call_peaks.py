@@ -99,14 +99,14 @@ def get_genes_with_peaks(zscores, threshold=5):
 
 
 
+######### EXAMPLE
 
-
-longest_tx = get_longest_transcript(transcripts)
-longest_tx = set_keys_to_tx_id(longest_tx)
-ribo_cov = extract_intervals_from_wigs(wig_fwd, wig_rev, longest_tx)
-wet = get_well_expressed_transcripts(ribo_cov)
-zscores = calculate_zscores(wet, start=5, end=2)
-gwp = get_genes_with_peaks(zscores, threshold=5)
+# longest_tx = get_longest_transcript(transcripts)
+# longest_tx = set_keys_to_tx_id(longest_tx)
+# ribo_cov = extract_intervals_from_wigs(wig_fwd, wig_rev, longest_tx)
+# wet = get_well_expressed_transcripts(ribo_cov)
+# zscores = calculate_zscores(wet, start=5, end=2)
+# gwp = get_genes_with_peaks(zscores, threshold=5)
 
 
 

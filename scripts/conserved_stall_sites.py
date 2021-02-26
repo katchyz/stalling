@@ -4,6 +4,7 @@
 
 import os.path
 import gzip
+from read_sequence import get_FASTA_sequence
 
 import _pickle as pickle
 import subprocess
@@ -102,25 +103,6 @@ def find_absolute_peak_position(sequence, peak):
 	abs_peak = peak + gaps - 1
 	return abs_peak
 
-
-def get_FASTA_sequence(filepath):
-	""" Reads gzipped fasta file """
-	f = gzip.open(filepath, 'rb')
-	fasta = {}
-	header_cds = ''
-	seq_cds = ''
-	for line in f:
-		line = line.strip()
-		if line.startswith('>'):
-			if header_cds and seq_cds:
-				fasta[header_cds] = seq_cds
-			header_cds = line.split()[0][1:]
-			seq_cds = ''
-		else:
-			seq_cds += line
-		# for the last sequence:
-		fasta[header_cds] = seq_cds
-	return fasta
 
 
 fasta = {}

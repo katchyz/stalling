@@ -49,10 +49,11 @@ def get_FASTA_sequence(filepath):
 	return fasta
 
 
+######### EXAMPLE
 
-fasta_cdna = "/Volumes/USELESS/DATA/fasta/mus_musculus/cdna/Mus_musculus.GRCm38.cdna.all.fa.gz"
-fasta_pep = "/Volumes/USELESS/DATA/fasta/mus_musculus/pep/Mus_musculus.GRCm38.pep.all.fa.gz"
+# fasta_cdna = "../DATA/fasta/mus_musculus/cdna/Mus_musculus.GRCm38.cdna.all.fa.gz"
+# fasta_pep = "../DATA/fasta/mus_musculus/pep/Mus_musculus.GRCm38.pep.all.fa.gz"
 
-fp = get_FASTA_sequence(fasta_pep)
+# fp = get_FASTA_sequence(fasta_pep)
 
 

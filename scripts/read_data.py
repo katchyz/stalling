@@ -154,12 +154,12 @@ def extract_intervals_from_wigs_per_length(dirpath, tx_coord, exp_exons=True):
 
 
 
-#######
+######### EXAMPLE
 # WIG - one file
 
-wig_fwd = '/Volumes/USELESS/STALLING/wigs/one_file/mouse_ingolia2011_NONE-forward.wig'
-wig_rev = '/Volumes/USELESS/STALLING/wigs/one_file/mouse_ingolia2011_NONE-reverse.wig'
+# wig_fwd = '../DATA/wigs/one_file/mouse_ingolia2011_NONE-forward.wig'
+# wig_rev = '../DATA/wigs/one_file/mouse_ingolia2011_NONE-reverse.wig'
 
-wig_cov = extract_intervals_from_wigs(wig_fwd, wig_rev, transcripts)
+# wig_cov = extract_intervals_from_wigs(wig_fwd, wig_rev, transcripts)
 
 
