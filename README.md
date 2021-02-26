@@ -20,7 +20,7 @@ Sequence data:
    `call_peaks.py` - finding peaks (putative stall sites) on transcripts  
 
    `conserved_stall_sites` - get conserved stall sites.. (TBD)  
-   `old_CSS_biomart.py` (get xml writing and querying) (TBD)  
+   `old_CSS_biomart.py` (get xml writing and querying) - deprecated, download files directly from BioMart 
    
    
 #### Saving and plotting data:
