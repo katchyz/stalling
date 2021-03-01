@@ -10,12 +10,14 @@ import gzip
 import _pickle as pickle
 import subprocess
 from itertools import combinations
+import pandas as pd
 
 from read_genome_annotations import *
 from read_data import *
 from read_sequence import *
 from call_peaks import *
 from conserved_stall_sites import *
+from save_data import *
 
 ### READ DATA
 
@@ -207,9 +209,6 @@ for n in range(len(organisms), 1, -1):
 				del lostSS[gene]
 
 
-pickle.dump(conSS, gzip.open(os.path.join(path, 'conSS.p.gz'), 'wb'))
-pickle.dump(lostSS, gzip.open(os.path.join(path, 'lostSS.p.gz'), 'wb'))
-
 # reformat data
 conserved_stall_sites = {}
 for gene in conSS:
@@ -219,7 +218,6 @@ for gene in conSS:
 		for org in conSS[gene][peak]:
 			conserved_stall_sites[gene][peak][org[0]] = org[1]
 
-pickle.dump(conserved_stall_sites, gzip.open(os.path.join(path, 'conserved_stall_sites.p.gz'), 'wb'))
 
 lost_stall_sites = {}
 for gene in lostSS:
@@ -229,9 +227,14 @@ for gene in lostSS:
 		for org_tr in lostSS[gene][peak]:
 			lost_stall_sites[gene][peak][org_tr[0]] = org_tr[1]
 
-pickle.dump(lost_stall_sites, gzip.open(os.path.join(path, 'lost_stall_sites.p.gz'), 'wb'))
 
 
 ### SAVE/EXPORT DATA (save_data.py)
+
+# save_data(conserved_stall_sites, filepath='conserved_stall_sites.p.gz')
+# conserved_stall_sites = load_data('conserved_stall_sites.p.gz')
+
+# export to R for plotting and analyses
+export_to_R_data_frame(conserved_stall_sites, filename='conserved_stall_sites.csv')
 
 

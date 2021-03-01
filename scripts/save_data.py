@@ -1,9 +1,10 @@
-#!/usr/bin/python3
+s#!/usr/bin/python3
 
 ''' Save data '''
 
 import _pickle as pickle
 import gzip
+import pandas as pd
 
 
 def write_peaks_to_BED_file(genes_with_peaks, bedpath, transcripts, lib='library_name'):
@@ -65,6 +66,8 @@ def load_data(filepath):
 		data = pickle.load(gzip.open(filepath, 'rb'))
 	else:
 		print('File is not of pickle gzip format. Provide filename ending with .p.gz')
+	
+	return data
 
 
 
@@ -86,6 +89,24 @@ def export_CSS(conserved_stall_sites, organisms, filename='upsetr.csv'):
 			f.write('\n')
  
 	f.close()
+
+
+
+def export_to_R_data_frame(conserved_stall_sites, filename='conserved_stall_sites.csv'):
+	""" Exports conserved stall sites into pandas data frame, saves as CSV """
+	df = {}
+	for gene in f.keys():
+		for ss in f[gene].keys():
+			df[gene+'_'+ss] = ['NA']*10 # empty array
+			for org in f[gene][ss].keys():
+				pos = f[gene][ss][org][0]
+				tx = f[gene][ss][org][1]
+				# add to df
+				df[gene+'_'+ss][organisms.index(org)*2] = tx
+				df[gene+'_'+ss][organisms.index(org)*2+1] = pos
+	#save
+	pdf = pd.DataFrame.from_dict(df, orient='index')
+	pdf.to_csv(filename, header=False)
 
 
 ######### EXAMPLE
