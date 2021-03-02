@@ -1,8 +1,13 @@
 ## stalling ##
 
-ribosome stalling scripts 
+Scripts and meta-data for manuscript "Deep conservation of ribosome stall sites across RNA processing genes"
 
+  
+  
+  
+  
 
+  
 #### Workflow for finding conserved stall sites: `workflow_CSS.py`, specific scripts are:     
    
 ##### Reading and manipulating data:
