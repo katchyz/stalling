@@ -22,12 +22,12 @@ snp_only <- function(x) {
 }
 
 # SNPs filtered to overlap human_renamed.bed (stall sites)
-all <- snp_only(readVcfAsVRanges("common_all_filtered.vcf"))
-clinvar <- snp_only(readVcfAsVRanges("clinvar_filtered.vcf"))
+all <- snp_only(readVcfAsVRanges("../../DATA/SNP/common_all_filtered.vcf"))
+clinvar <- snp_only(readVcfAsVRanges("../../DATA/SNP/clinvar_filtered.vcf"))
 
 # SNPs filtered to overlap human_renamed_random_SNP.bed - random control stall sites
-all_control <- snp_only(readVcfAsVRanges("common_all_filtered_random_SNP.vcf"))
-clinvar_control <- snp_only(readVcfAsVRanges("clinvar_filtered_random_SNP.vcf"))
+all_control <- snp_only(readVcfAsVRanges("../../DATA/SNP/common_all_filtered_random_SNP.vcf"))
+clinvar_control <- snp_only(readVcfAsVRanges("../../DATA/SNP/clinvar_filtered_random_SNP.vcf"))
 
 # # this is all cds used to find stall sites
 # load("H2cds.Rsave") # 38100
@@ -35,26 +35,26 @@ clinvar_control <- snp_only(readVcfAsVRanges("clinvar_filtered_random_SNP.vcf"))
 # cds <- reduce(cds)
 # seqlevelsStyle(cds) <- seqlevelsStyle(all)
 # export.bed(cds, "H2cds_renamed.bed")
-cds <- import.bed("H2cds_renamed.bed")
+cds <- import.bed("../../DATA/SNP/H2cds_renamed.bed")
 
 # total number of positions in our search space
 count_bp(cds) # 5165354
 # how many SNPs fall into this search space?
-# bcftools filter -R H2cds_renamed.bed common_all_20180418.vcf.gz -Ov -o common_on_cds.vcf
-snps_on_cds <- snp_only(readVcfAsVRanges("common_on_cds.vcf"))
-snps_on_cds_clinvar <- snp_only(readVcfAsVRanges("clinvar_on_cds.vcf"))
+# bcftools filter -R ../../DATA/SNP/H2cds_renamed.bed ../../DATA/SNP/common_all_20180418.vcf.gz -Ov -o ../../DATA/SNP/common_on_cds.vcf
+snps_on_cds <- snp_only(readVcfAsVRanges("../../DATA/SNP/common_on_cds.vcf"))
+snps_on_cds_clinvar <- snp_only(readVcfAsVRanges("../../DATA/SNP/clinvar_on_cds.vcf"))
 count_bp(snps_on_cds) # 44147
 count_bp(snps_on_cds_clinvar) # 47911
 # probability that random base is SNP
 p_base_is_snp <- round(count_bp(snps_on_cds) / count_bp(cds), 3) # 0.008546752
 p_base_is_snp_clinvar <- round(count_bp(snps_on_cds_clinvar) / count_bp(cds), 3) # 0.009275453
 # expected count of SNPs in control
-control_ss <- rtracklayer::import.bed("human_renamed_random_SNP.bed")
+control_ss <- rtracklayer::import.bed("../../DATA/SNP/human_renamed_random_SNP.bed")
 round(p_base_is_snp * count_bp(control_ss), 0)
 round(p_base_is_snp_clinvar * count_bp(control_ss), 0)
 
 # expected count of SNPs in stall sites
-conserved_ss <- rtracklayer::import.bed("human_renamed.bed")
+conserved_ss <- rtracklayer::import.bed("../../DATA/SNP/human_renamed.bed")
 p_base_is_snp * count_bp(conserved_ss) # 60.86997
 p_base_is_snp_clinvar * count_bp(conserved_ss) # 66.05978
 
@@ -109,7 +109,7 @@ get_count_nsyn_SNP(clinvar, conserved_ss) # 33
 
 # check whether synonymous frequent to rare changes between control/conserved
 # if substitution from frequent to rare it is possible there was little tRNA and that caused stalling
-freq <- fread("human_codon_frequency.csv")
+freq <- fread("../../DATA/SNP/human_codon_frequency.csv")
 
 
 get_freq <- function(x) {
@@ -199,11 +199,11 @@ fisher.test(common_snps_dt)
 
 
 # rest is some noise?!
-mm <- readVcfAsVRanges("human_h2_fitlered.vcf")
-db <- readVcfAsVRanges("clinvar_filtered_random_SNP.vcf")
+mm <- readVcfAsVRanges("../../DATA/SNP/human_h2_fitlered.vcf")
+db <- readVcfAsVRanges("../../DATA/SNP/clinvar_filtered_random_SNP.vcf")
 db2 <- readVcfAsVRanges("clin")
 
-all_control2 <- readVcfAsVRanges("~/Downloads/common_all_filtered_random_SNP.vcf")
+all_control2 <- readVcfAsVRanges("../../DATA/SNP/common_all_filtered_random_SNP.vcf")
 
 
 
@@ -212,17 +212,16 @@ all_control2 <- readVcfAsVRanges("~/Downloads/common_all_filtered_random_SNP.vcf
 # filterVcf(tabix.file, genome, destination.file,
 #           prefilters=prefilters, filters=filters)
 
-stol <- rtracklayer::import("human_random_SNP.bed") #"human.bed"
+stol <- rtracklayer::import("../../DATA/SNP/human_random_SNP.bed") #"human.bed"
 stol <- stol[width(stol) == 3]
-rtracklayer::export.bed(stol, "human2.bed")
-stol <- rtracklayer::import.bed("human2.bed")
+rtracklayer::export.bed(stol, "../../DATA/SNP/human2.bed")
+stol <- rtracklayer::import.bed("../../DATA/SNP/human2.bed")
 
 seqlevelsStyle(stol) <- seqlevelsStyle(db)
-rtracklayer::export.bed(stol, "human_renamed_random_SNP.bed")
-stol <- rtracklayer::import.bed("human_renamed_random_SNP.bed")
+rtracklayer::export.bed(stol, "../../DATA/SNP/human_renamed_random_SNP.bed")
+stol <- rtracklayer::import.bed("../../DATA/SNP/human_renamed_random_SNP.bed")
 
 mm_over <- mm[mm %over% stol]
 mm_over@altDepth/(mm_over@refDepth + mm_over@altDepth)
 
-#load("human_genomic_granges.Rsave")
-load("human_genomic_granges.Rsave")
+load("../../DATA/SNP/human_genomic_granges.Rsave")
