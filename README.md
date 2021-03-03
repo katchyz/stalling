@@ -1,37 +1,37 @@
 ## stalling ##
 
-Scripts and meta-data for manuscript "Deep conservation of ribosome stall sites across RNA processing genes"
+#### "Deep conservation of ribosome stall sites across RNA processing genes" ####
+> analyses from Materials and Methods section
 
-  
-  
-  
-  
 
+
+`stall_site_calling_and_conservation_analysis`
   
-#### Workflow for finding conserved stall sites: `workflow_CSS.py`, specific scripts are:     
+> Workflow for finding conserved stall sites:
+	`workflow_CSS.py`    
    
-##### Reading and manipulating data:
+>> Reading and manipulating data:
 
-Genomic coordinates:  
-   `read_genome_annotations.py` - reading GTF and BED files  
+	Genomic coordinates:  
+		`read_genome_annotations.py` - reading GTF and BED files  
 
-Ribosome profiling data:  
-   `read_data.py` - reading wiggle files and mapping the coverage to genomic annotations  
+	Ribosome profiling data:  
+		`read_data.py` - reading wiggle files and mapping the coverage to genomic annotations  
 
-Sequence data:  
-   `read_sequence.py` and `translate.py` - reading FASTA files, translating DNA to protein sequence  
-   
-   
-##### Calling putative and conserved stall sites:
-
-   `call_peaks.py` - finding peaks (putative stall sites) on transcripts  
-
-   `conserved_stall_sites.py` - get conserved stall sites   
-   `old_CSS_biomart.py` (get xml writing and querying) - deprecated, download files directly from BioMart 
+	Sequence data:  
+		`read_sequence.py` and `translate.py` - reading FASTA files, translating DNA to protein sequence  
    
    
-##### Saving and plotting data:
+>> Calling putative and conserved stall sites:
 
-   `save_data.py` - writing peaks to BED file, saving data to and reading from gzip pickle python  
+	`call_peaks.py` - finding peaks (putative stall sites) on transcripts  
 
-   `plotting.py` - extract fragment length and sequence data around peaks 
+	`conserved_stall_sites.py` - get conserved stall sites   
+	`old_CSS_biomart.py` (get xml writing and querying) - deprecated, download files directly from BioMart 
+   
+   
+>> Saving and plotting data:
+
+	`save_data.py` - writing peaks to BED file, saving data to and reading from gzip pickle python  
+
+	`plotting.py` - extract fragment length and sequence data around peaks 
