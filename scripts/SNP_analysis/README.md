@@ -1,3 +1,6 @@
+### SNP analysis
+
+
 Use 0_mm_over_stolsites.R to see analysis
 Use SNPs.R to recreate files that were leter processed by the 0_mm_cov.sh commands and 0_mm_over_stolsites.R
 
@@ -10,7 +13,7 @@ we analyzed here only h2 library
 
 human.bed
 
-# processing of clinvar snps/common snps
+#### processing of clinvar snps/common snps
 
 cut -f1,2 < clinvar_20190513.vcf | sort -k1,1 -k2,2 | uniq | wc -l
 cut -d ' ' -f1,2,4,5 < clinvar_20190513.vcf | sort -t ' ' -k1,1 -k2,2 -k3,3 -k4,4 | uniq | wc -l
