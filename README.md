@@ -1,6 +1,11 @@
 ## "Deep conservation of ribosome stall sites across RNA processing genes" ##
 analyses from Materials and Methods section
 
+Intermediate data files available at [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4589132.svg)](https://doi.org/10.5281/zenodo.4589132) Extract to the DATA directory.  
+
+Download GTF genome annotations and fasta files from  Ensembl [![Ensembl](http://www.ensembl.org/)](http://www.ensembl.org/). Extract to DATA/genomes/GTF and DATA/fasta.
+
+The scripts follow the structure as in Materials and Methods section:  
 
 ##### Calling stall sites:
 `stall_site_calling_and_conservation_analysis`
