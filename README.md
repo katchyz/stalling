@@ -3,7 +3,7 @@ analyses from Materials and Methods section
 
 Intermediate data files available at [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4589132.svg)](https://doi.org/10.5281/zenodo.4589132) Extract to the DATA directory.  
 
-Download GTF genome annotations and fasta files from  Ensembl [![Ensembl](http://www.ensembl.org/)](http://www.ensembl.org/). Extract to DATA/genomes/GTF and DATA/fasta.
+Download GTF genome annotations and fasta files from  Ensembl [![Ensembl](https://img.shields.io/badge/LABEL-MESSAGE-COLOR.svg)](http://www.ensembl.org/). Extract to DATA/genomes/GTF and DATA/fasta.
 
 The scripts follow the structure as in Materials and Methods section:  
 
